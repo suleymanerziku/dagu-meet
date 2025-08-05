@@ -76,6 +76,26 @@ export default function App() {
       }
   }, [localStream, nextAction]);
 
+  const handleHangUp = useCallback(() => {
+    peerConnectionRef.current?.close();
+    localStream?.getTracks().forEach(track => track.stop());
+    remoteStream?.getTracks().forEach(track => track.stop());
+
+    setLocalStream(null);
+    setRemoteStream(null);
+    peerConnectionRef.current = null;
+    setAppState(AppState.IDLE);
+    setMeetingId('');
+    setJoinMeetingCodeInput('');
+    setOfferCode('');
+    setGuestOfferInput('');
+    setAnswerCode('');
+    setHostAnswerInput('');
+    setIsCameraOn(true);
+    setIsMicOn(true);
+    window.history.replaceState(null, '', ' ');
+  }, [localStream, remoteStream]);
+
   const createPeerConnection = useCallback(() => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
@@ -92,7 +112,16 @@ export default function App() {
     pc.ontrack = event => {
       console.log('Received remote track:', event.streams[0]);
       setRemoteStream(event.streams[0]);
-      setAppState(AppState.CONNECTED);
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log(`ICE connection state: ${pc.iceConnectionState}`);
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setAppState(AppState.CONNECTED);
+      } else if (pc.iceConnectionState === 'failed') {
+        alert('Connection failed. Please check your network and try again.');
+        handleHangUp();
+      }
     };
     
     if(localStream) {
@@ -103,7 +132,7 @@ export default function App() {
 
     peerConnectionRef.current = pc;
     return pc;
-  }, [localStream]);
+  }, [localStream, handleHangUp]);
 
   const handleCreateMeeting = async () => {
     const newId = generateMeetingId();
@@ -230,26 +259,6 @@ export default function App() {
     }
   };
   
-  const handleHangUp = () => {
-    peerConnectionRef.current?.close();
-    localStream?.getTracks().forEach(track => track.stop());
-    remoteStream?.getTracks().forEach(track => track.stop());
-
-    setLocalStream(null);
-    setRemoteStream(null);
-    peerConnectionRef.current = null;
-    setAppState(AppState.IDLE);
-    setMeetingId('');
-    setJoinMeetingCodeInput('');
-    setOfferCode('');
-    setGuestOfferInput('');
-    setAnswerCode('');
-    setHostAnswerInput('');
-    setIsCameraOn(true);
-    setIsMicOn(true);
-    window.history.replaceState(null, '', ' ');
-  };
-
   const toggleMic = () => {
     if (localStream) {
       localStream.getAudioTracks().forEach(track => {

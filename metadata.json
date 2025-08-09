@@ -1,0 +1,9 @@
+{
+  "name": "Dagu Meet",
+  "description": "A Google Meet-like video conferencing application built with React, TypeScript, and WebRTC for real-time communication.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "prompt": ""
+}
